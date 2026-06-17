@@ -33,6 +33,7 @@ docker-compose.yml      single-host stack
 |---|---|
 | [Architecture](docs/ARCHITECTURE.md) | The layered architecture, request flow, and mapping to MuleSoft Agent Fabric |
 | [Layered architecture (L1–L5)](docs/ARCHITECTURE_LAYERS.md) | Per-layer workflow, technology stack, and the rationale for each choice |
+| [Code map](docs/CODE_MAP.md) | Every source file mapped to its layer (L1–L5), incl. the shared library |
 | [macOS setup](docs/SETUP_MAC.md) | Requirements + clone-from-Git + run, for Apple Silicon / Intel |
 | [Windows setup](docs/SETUP_WINDOWS.md) | Requirements + setup via WSL2 + Docker Desktop |
 | [Slack bot setup](docs/SLACK_SETUP.md) | Create the Slack app, tokens, and run the chat frontend |
