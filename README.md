@@ -35,6 +35,7 @@ docker-compose.yml      single-host stack
 | [macOS setup](docs/SETUP_MAC.md) | Requirements + clone-from-Git + run, for Apple Silicon / Intel |
 | [Windows setup](docs/SETUP_WINDOWS.md) | Requirements + setup via WSL2 + Docker Desktop |
 | [Slack bot setup](docs/SLACK_SETUP.md) | Create the Slack app, tokens, and run the chat frontend |
+| [Restart guide](docs/RESTART.md) | Stop & resume the demo across a machine shutdown (state persists) |
 | [Runbook](docs/RUNBOOK.md) | Day-to-day operations, governance, troubleshooting, production items |
 | [Plan](docs/PLAN.md) | The phased design/build plan |
 
