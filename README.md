@@ -27,6 +27,17 @@ deploy/                 otel-collector config, keycloak dev realm
 docker-compose.yml      single-host stack
 ```
 
+## Documentation
+
+| Guide | What's in it |
+|---|---|
+| [Architecture](docs/ARCHITECTURE.md) | The layered architecture, request flow, and mapping to MuleSoft Agent Fabric |
+| [macOS setup](docs/SETUP_MAC.md) | Requirements + clone-from-Git + run, for Apple Silicon / Intel |
+| [Windows setup](docs/SETUP_WINDOWS.md) | Requirements + setup via WSL2 + Docker Desktop |
+| [Slack bot setup](docs/SLACK_SETUP.md) | Create the Slack app, tokens, and run the chat frontend |
+| [Runbook](docs/RUNBOOK.md) | Day-to-day operations, governance, troubleshooting, production items |
+| [Plan](docs/PLAN.md) | The phased design/build plan |
+
 ## Prerequisites
 
 Everything runs in containers, so you only need:
@@ -221,4 +232,3 @@ See [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for operations and the remaining produc
 
 See [`docs/PLAN.md`](docs/PLAN.md) for the full phased build plan. All four phases
 (registry, governed gateways, broker, hardening) are implemented and verified in Docker.
-# agent-fabric
