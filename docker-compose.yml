@@ -69,6 +69,18 @@ services:
     ports:
       - "9002:9002"
 
+  # LLM-backed A2A writing assistant (uses ANTHROPIC_API_KEY from env_file: .env).
+  writer-a2a:
+    <<: *app
+    command: ["python", "-m", "writer_a2a.server"]
+    environment:
+      HOST: 0.0.0.0
+      PORT: "9003"
+      A2A_PUBLIC_URL: "http://writer-a2a:9003/"
+      WRITER_MODEL: ${WRITER_MODEL:-claude-haiku-4-5}
+    ports:
+      - "9003:9003"
+
   # ---------------------------------------------------------------- fabric services
   registry:
     <<: *app

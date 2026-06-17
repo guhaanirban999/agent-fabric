@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from conftest import REGISTRY, find_agent
+from conftest import REGISTRY, find_agent, find_agent_by_skill
 
 REQUIRED_ENTRY_FIELDS = {"id", "kind", "name", "endpoint_url", "transport", "skills", "agent_card"}
 
@@ -29,6 +29,13 @@ async def test_a2a_card_has_echo_skill(client):
     assert a2a["agent_card"].get("name")
     skill_ids = {s["id"] for s in a2a["skills"]}
     assert "echo" in skill_ids
+
+
+async def test_writer_a2a_card_has_assist_skill(client):
+    writer = await find_agent_by_skill(client, "assist")
+    assert writer["kind"] == "a2a_agent"
+    assert writer["domain"] == "assistant"
+    assert writer["agent_card"].get("name") == "writer-a2a"
 
 
 async def test_discovery_filters(client):

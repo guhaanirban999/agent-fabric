@@ -46,9 +46,22 @@ async def ensure_fixtures_registered(client):
             f"{REGISTRY}/agents",
             json={"kind": "a2a_agent", "domain": "demo", "card_url": "http://echo-a2a:9002"},
         )
+    # The LLM writing-assistant A2A agent (registered by skill, since echo-a2a is also a2a_agent).
+    have_assist = any(any(s["id"] == "assist" for s in a["skills"]) for a in agents)
+    if not have_assist:
+        await client.post(
+            f"{REGISTRY}/agents",
+            json={"kind": "a2a_agent", "domain": "assistant", "card_url": "http://writer-a2a:9003"},
+        )
 
 
 async def find_agent(client, kind: str) -> dict:
     agents = (await client.get(f"{REGISTRY}/agents", params={"kind": kind})).json()
     assert agents, f"no agent of kind {kind} registered"
+    return agents[0]
+
+
+async def find_agent_by_skill(client, skill: str) -> dict:
+    agents = (await client.get(f"{REGISTRY}/agents", params={"skill": skill})).json()
+    assert agents, f"no agent exposing skill {skill} registered"
     return agents[0]

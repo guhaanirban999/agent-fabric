@@ -26,7 +26,7 @@ dev_subject if input.subject.scopes[_] == "*"
 
 # Tools/agents that anyone may call in the dev baseline.
 allowed_mcp_tools := {"echo", "reverse", "add", "get-product-by-id"}
-allowed_a2a_skills := {"echo"}
+allowed_a2a_skills := {"echo", "assist"}
 
 decision := d if {
 	input.protocol == "mcp"

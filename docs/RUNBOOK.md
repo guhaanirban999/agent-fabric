@@ -13,7 +13,8 @@ Single-host (Docker Compose) operations for the open-source Agent Fabric.
 | opa | 8181 | policy decision point (hot-reload via `--watch`) |
 | postgres | 5432 | registry, audit_log, broker_tasks |
 | otel-collector | 4317/4318 | traces + metrics (console exporter) |
-| echo-mcp / echo-a2a | 9001 / 9002 | sample fixtures |
+| echo-mcp / echo-a2a | 9001 / 9002 | sample fixtures (echo tool / echo agent) |
+| writer-a2a | 9003 | LLM-backed A2A writing assistant (skill `assist`, domain `assistant`) |
 
 ## Lifecycle
 
@@ -41,9 +42,29 @@ curl -X POST localhost:8000/agents -H 'content-type: application/json' -d '{
 
 # After registering a NEW MCP server, refresh the gateway (no restart):
 curl -X POST localhost:8010/admin/reload
+# (A2A agents need no gateway reload — gateway-a2a resolves them per-request.)
 ```
 
 Discovery: `GET /agents?domain=&kind=&skill=&tag=&health=`, `GET /domains`.
+
+### Adding a native A2A agent (e.g. an LLM assistant)
+
+`writer-a2a` is a worked example of a self-contained native A2A agent — onboarding is
+code-additive only, no registry/gateway/broker changes:
+
+1. Add a fixture under `fixtures/<name>/` modeled on `fixtures/writer_a2a` (a2a-sdk route
+   builders + an `AgentExecutor`; publishes `/.well-known/agent-card.json`).
+2. Add a compose service using the `<<: *app` anchor (it inherits `env_file: .env`, so
+   `ANTHROPIC_API_KEY` is available). `docker compose build <name> && docker compose up -d <name>`
+   — the fat image bakes the venv, so a **build is required** for the new workspace member.
+3. Register it: `curl -X POST localhost:8000/agents -d '{"kind":"a2a_agent","domain":"assistant","card_url":"http://writer-a2a:9003"}'`.
+4. Add each skill id to `allowed_a2a_skills` in `policies/authz.rego` (OPA `--watch` hot-reloads).
+
+```bash
+# Route a task to the writer agent (LLM summarize/rewrite/answer):
+curl -X POST localhost:8020/tasks -H 'content-type: application/json' \
+  -d '{"task_text":"summarize in one sentence: <text>","domain":"assistant"}'
+```
 
 ## Running work
 
@@ -81,9 +102,10 @@ docker compose run --rm -v "$PWD/tests:/tests" --no-deps broker \
   bash -c "uv pip install -q --python /app/.venv/bin/python pytest pytest-asyncio && \
            cd /tests && /app/.venv/bin/python -m pytest"
 ```
-Contract tests validate registry shapes; e2e tests cover gateway governance (allow/deny/
-list-filter), A2A allow/deny, broker routing, and SSE streaming; unit tests cover the OBO
-token helper. (e2e broker tests make real Anthropic calls — needs `ANTHROPIC_API_KEY`.)
+Contract tests validate registry shapes (incl. the `writer-a2a` `assist` skill); e2e tests
+cover gateway governance (allow/deny/list-filter), A2A allow/deny, the governed LLM `assist`
+path, broker routing, and SSE streaming; unit tests cover the OBO token helper. 16 tests total.
+(e2e broker + `assist` tests make real Anthropic calls — needs `ANTHROPIC_API_KEY`.)
 
 ## Troubleshooting
 
