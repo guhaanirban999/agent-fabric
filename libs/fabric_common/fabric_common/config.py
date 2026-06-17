@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://fabric:fabric@postgres:5432/fabric"
     opa_url: str = "http://opa:8181"
 
-    # Telemetry
-    otel_exporter_otlp_endpoint: str = "http://otel-collector:4317"
+    # Telemetry. Empty endpoint => tracing stays in-process (no collector required).
+    otel_exporter_otlp_endpoint: str = ""
     otel_service_name: str = "agent-fabric"
 
     # Fabric service discovery

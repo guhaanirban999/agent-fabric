@@ -1,5 +1,5 @@
 # Open-Source Agent Fabric — single-host stack.
-# Phase 0 brings up infra (postgres, opa, otel-collector), the two fixtures
+# Phase 0 brings up infra (postgres, opa), the two fixtures
 # (echo-mcp, echo-a2a), and health-only stubs for the four fabric services.
 # Later phases flesh out registry -> gateways -> broker.
 
@@ -15,6 +15,7 @@ services:
   # ---------------------------------------------------------------- infrastructure
   postgres:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-fabric}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fabric}
@@ -31,6 +32,7 @@ services:
 
   opa:
     image: openpolicyagent/opa:1.7.1
+    restart: unless-stopped
     command:
       - "run"
       - "--server"
@@ -43,14 +45,9 @@ services:
     volumes:
       - ./policies:/policies:ro
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - ./deploy/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
-    ports:
-      - "4317:4317"
-      - "4318:4318"
+  # otel-collector removed — tracing export is disabled by default (no monitoring yet).
+  # To re-enable later: restore this service + the OTLP exporter config, and set
+  # OTEL_EXPORTER_OTLP_ENDPOINT in .env. See deploy/otel-collector-config.yaml.
 
   # ---------------------------------------------------------------- fixtures
   echo-mcp:
@@ -81,8 +78,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      otel-collector:
-        condition: service_started
 
   gateway-mcp:
     <<: *app

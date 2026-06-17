@@ -31,11 +31,17 @@ def setup_telemetry(service_name: str, otlp_endpoint: str, fastapi_app=None) -> 
 
     resource = Resource.create({"service.name": service_name})
     provider = TracerProvider(resource=resource)
-    try:
-        exporter = OTLPSpanExporter(endpoint=otlp_endpoint, insecure=True)
-        provider.add_span_processor(BatchSpanProcessor(exporter))
-    except Exception as exc:  # pragma: no cover - never block startup on telemetry
-        logger.warning("OTLP exporter init failed (%s); traces stay in-process", exc)
+    # Only export when a collector endpoint is configured. Empty => tracing stays
+    # in-process (spans + trace ids still work; nothing tries to connect). This lets
+    # the stack run without an otel-collector when monitoring isn't in use.
+    if otlp_endpoint and otlp_endpoint.strip():
+        try:
+            exporter = OTLPSpanExporter(endpoint=otlp_endpoint, insecure=True)
+            provider.add_span_processor(BatchSpanProcessor(exporter))
+        except Exception as exc:  # pragma: no cover - never block startup on telemetry
+            logger.warning("OTLP exporter init failed (%s); traces stay in-process", exc)
+    else:
+        logger.info("No OTLP endpoint set; tracing runs in-process (no export)")
 
     trace.set_tracer_provider(provider)
 
