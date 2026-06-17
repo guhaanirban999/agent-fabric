@@ -221,3 +221,4 @@ See [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for operations and the remaining produc
 
 See [`docs/PLAN.md`](docs/PLAN.md) for the full phased build plan. All four phases
 (registry, governed gateways, broker, hardening) are implemented and verified in Docker.
+# agent-fabric
