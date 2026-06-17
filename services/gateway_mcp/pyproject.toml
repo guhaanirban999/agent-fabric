@@ -1,0 +1,21 @@
+[project]
+name = "gateway-mcp"
+version = "0.1.0"
+description = "Agent Fabric — MCP governance gateway (Omni-Gateway replacement, MCP side)"
+requires-python = ">=3.11"
+dependencies = [
+    "fabric-common",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "fastmcp>=3.0,<4",
+]
+
+[tool.uv.sources]
+fabric-common = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["gateway_mcp_svc"]

@@ -1,0 +1,135 @@
+# Open-Source Agent Fabric — single-host stack.
+# Phase 0 brings up infra (postgres, opa, otel-collector), the two fixtures
+# (echo-mcp, echo-a2a), and health-only stubs for the four fabric services.
+# Later phases flesh out registry -> gateways -> broker.
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: agent-fabric:local
+  env_file: .env
+  restart: unless-stopped
+
+services:
+  # ---------------------------------------------------------------- infrastructure
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fabric}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fabric}
+      POSTGRES_DB: ${POSTGRES_DB:-fabric}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fabric}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  opa:
+    image: openpolicyagent/opa:1.7.1
+    command:
+      - "run"
+      - "--server"
+      - "--log-level=info"
+      - "--addr=0.0.0.0:8181"
+      - "--watch"          # hot-reload policies on file change (bind-mounted ./policies)
+      - "/policies"
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./policies:/policies:ro
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./deploy/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+  # ---------------------------------------------------------------- fixtures
+  echo-mcp:
+    <<: *app
+    command: ["python", "-m", "echo_mcp.server"]
+    environment:
+      HOST: 0.0.0.0
+      PORT: "9001"
+    ports:
+      - "9001:9001"
+
+  echo-a2a:
+    <<: *app
+    command: ["python", "-m", "echo_a2a.server"]
+    environment:
+      HOST: 0.0.0.0
+      PORT: "9002"
+      A2A_PUBLIC_URL: "http://echo-a2a:9002/"
+    ports:
+      - "9002:9002"
+
+  # ---------------------------------------------------------------- fabric services
+  registry:
+    <<: *app
+    command: ["uvicorn", "registry_svc.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+  gateway-mcp:
+    <<: *app
+    command: ["uvicorn", "gateway_mcp_svc.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8010:8000"
+    depends_on:
+      opa:
+        condition: service_started
+      registry:
+        condition: service_started
+
+  gateway-a2a:
+    <<: *app
+    command: ["uvicorn", "gateway_a2a_svc.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8011:8000"
+    depends_on:
+      opa:
+        condition: service_started
+      registry:
+        condition: service_started
+
+  broker:
+    <<: *app
+    command: ["uvicorn", "broker_svc.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8020:8000"
+    depends_on:
+      registry:
+        condition: service_started
+      gateway-mcp:
+        condition: service_started
+      gateway-a2a:
+        condition: service_started
+
+  # Slack chat frontend (Socket Mode — outbound WebSocket only, no port).
+  chatbot:
+    <<: *app
+    command: ["python", "-m", "chatbot_svc.main"]
+    environment:
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+      SLACK_APP_TOKEN: ${SLACK_APP_TOKEN}
+      BROKER_URL: ${BROKER_URL:-http://broker:8000}
+    depends_on:
+      broker:
+        condition: service_started
+
+volumes:
+  pgdata:
